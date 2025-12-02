@@ -274,7 +274,11 @@ public static class BoatUtil
         dialogueRunner.AddCommandHandler<string>("ChangeBoatFlag", ChangeBoatFlag);
     }
 
-    public static bool GetHasFlag(string flagId) => GameManager.Instance.SaveData.GetBoolVariable($"has-flag-{flagId}");
+    public static bool GetHasFlag(string flagId) {
+        var result = GameManager.Instance.SaveData.GetBoolVariable($"has-flag-{flagId}");
+        WinchCore.Log.Debug($"GetHasFlag({flagId}) returning {result}");
+        return result;
+    }
     public static void SetHasFlag(string flagId, bool hasFlag) => GameManager.Instance.SaveData.SetBoolVariable($"has-flag-{flagId}", hasFlag);
 
     internal static int GetModdedFlagPages()
