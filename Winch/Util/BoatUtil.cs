@@ -362,7 +362,7 @@ public static class BoatUtil
             .Concat(GameManager.Instance.SaveData.Storage.GetAllItemsOfType<SpatialItemInstance>(ItemType.GENERAL, ItemSubtype.GENERAL))
             .ToItemData();
         var flag = allItemsOfType.FirstOrDefault(item => item is HarvestableItemData harvestableItem && harvestableItem.IsFlag());
-        var id = flag != null ? flag.id : string.Empty;
+        var id = flag != null ? flag.id.Replace("flag-", "") : string.Empty;
         WinchCore.Log.Debug($"GetIdOfFlagInInventoryAndStorage() returning {id}");
         return id;
     }
