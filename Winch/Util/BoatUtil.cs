@@ -274,7 +274,11 @@ public static class BoatUtil
         dialogueRunner.AddCommandHandler<string>("ChangeBoatFlag", ChangeBoatFlag);
     }
 
-    public static bool GetHasFlag(string flagId) => GameManager.Instance.SaveData.GetBoolVariable($"has-flag-{flagId}");
+    public static bool GetHasFlag(string flagId) {
+        var result = GameManager.Instance.SaveData.GetBoolVariable($"has-flag-{flagId}");
+        WinchCore.Log.Debug($"GetHasFlag({flagId}) returning {result}");
+        return result;
+    }
     public static void SetHasFlag(string flagId, bool hasFlag) => GameManager.Instance.SaveData.SetBoolVariable($"has-flag-{flagId}", hasFlag);
 
     internal static int GetModdedFlagPages()
@@ -358,7 +362,7 @@ public static class BoatUtil
             .Concat(GameManager.Instance.SaveData.Storage.GetAllItemsOfType<SpatialItemInstance>(ItemType.GENERAL, ItemSubtype.GENERAL))
             .ToItemData();
         var flag = allItemsOfType.FirstOrDefault(item => item is HarvestableItemData harvestableItem && harvestableItem.IsFlag());
-        var id = flag != null ? flag.id : string.Empty;
+        var id = flag != null ? flag.id.Replace("flag-", "") : string.Empty;
         WinchCore.Log.Debug($"GetIdOfFlagInInventoryAndStorage() returning {id}");
         return id;
     }
