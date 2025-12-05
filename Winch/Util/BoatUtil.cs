@@ -284,7 +284,7 @@ public static class BoatUtil
     internal static int GetModdedFlagPages()
     {
         var pages = Mathf.CeilToInt(ModdedBoatFlagDataDict.Count / (float)optionsPerPage);
-        WinchCore.Log.Error("GetModdedFlagPages " + pages);
+        WinchCore.Log.Debug("GetModdedFlagPages " + pages);
         return pages;
     }
 
@@ -295,7 +295,7 @@ public static class BoatUtil
 
     internal static void AddModdedFlagPageOptions(int moddedFlagPageNumber)
     {
-        WinchCore.Log.Error("AddModdedFlagPageOptions " + moddedFlagPageNumber);
+        WinchCore.Log.Debug("AddModdedFlagPageOptions " + moddedFlagPageNumber);
         List<DialogueUtil.DredgeOption> options = new List<DialogueUtil.DredgeOption>();
         foreach (BoatFlagData flagData in GetFlagsForModdedPage(moddedFlagPageNumber))
         {
@@ -331,7 +331,7 @@ public static class BoatUtil
     internal static int GetModdedPaintPages()
     {
         var pages = Mathf.CeilToInt(ModdedBoatPaintDataDict.Count / (float)optionsPerPage);
-        WinchCore.Log.Error("GetModdedPaintPages " + pages);
+        WinchCore.Log.Debug("GetModdedPaintPages " + pages);
         return pages;
     }
 
@@ -342,7 +342,7 @@ public static class BoatUtil
 
     internal static void AddModdedPaintPageOptions(int moddedColorPageNumber)
     {
-        WinchCore.Log.Error("AddModdedPaintPageOptions " + moddedColorPageNumber);
+        WinchCore.Log.Debug("AddModdedPaintPageOptions " + moddedColorPageNumber);
         List<DialogueUtil.DredgeOption> options = new List<DialogueUtil.DredgeOption>();
         foreach (BoatPaintData paintData in GetPaintsForModdedPage(moddedColorPageNumber))
         {
