@@ -274,13 +274,17 @@ public static class BoatUtil
         dialogueRunner.AddCommandHandler<string>("ChangeBoatFlag", ChangeBoatFlag);
     }
 
-    public static bool GetHasFlag(string flagId) => GameManager.Instance.SaveData.GetBoolVariable($"has-flag-{flagId}");
+    public static bool GetHasFlag(string flagId) {
+        var result = GameManager.Instance.SaveData.GetBoolVariable($"has-flag-{flagId}");
+        WinchCore.Log.Debug($"GetHasFlag({flagId}) returning {result}");
+        return result;
+    }
     public static void SetHasFlag(string flagId, bool hasFlag) => GameManager.Instance.SaveData.SetBoolVariable($"has-flag-{flagId}", hasFlag);
 
     internal static int GetModdedFlagPages()
     {
         var pages = Mathf.CeilToInt(ModdedBoatFlagDataDict.Count / (float)optionsPerPage);
-        WinchCore.Log.Error("GetModdedFlagPages " + pages);
+        WinchCore.Log.Debug("GetModdedFlagPages " + pages);
         return pages;
     }
 
@@ -291,7 +295,7 @@ public static class BoatUtil
 
     internal static void AddModdedFlagPageOptions(int moddedFlagPageNumber)
     {
-        WinchCore.Log.Error("AddModdedFlagPageOptions " + moddedFlagPageNumber);
+        WinchCore.Log.Debug("AddModdedFlagPageOptions " + moddedFlagPageNumber);
         List<DialogueUtil.DredgeOption> options = new List<DialogueUtil.DredgeOption>();
         foreach (BoatFlagData flagData in GetFlagsForModdedPage(moddedFlagPageNumber))
         {
@@ -327,7 +331,7 @@ public static class BoatUtil
     internal static int GetModdedPaintPages()
     {
         var pages = Mathf.CeilToInt(ModdedBoatPaintDataDict.Count / (float)optionsPerPage);
-        WinchCore.Log.Error("GetModdedPaintPages " + pages);
+        WinchCore.Log.Debug("GetModdedPaintPages " + pages);
         return pages;
     }
 
@@ -338,7 +342,7 @@ public static class BoatUtil
 
     internal static void AddModdedPaintPageOptions(int moddedColorPageNumber)
     {
-        WinchCore.Log.Error("AddModdedPaintPageOptions " + moddedColorPageNumber);
+        WinchCore.Log.Debug("AddModdedPaintPageOptions " + moddedColorPageNumber);
         List<DialogueUtil.DredgeOption> options = new List<DialogueUtil.DredgeOption>();
         foreach (BoatPaintData paintData in GetPaintsForModdedPage(moddedColorPageNumber))
         {
@@ -351,6 +355,15 @@ public static class BoatUtil
         GameManager.Instance.DialogueRunner.Dialogue.AddOptions(options.ToArray());
     }
 
+    internal static readonly string flagPrefix = "flag-";
+    internal static string RemoveFlagPrefix(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return string.Empty;
+
+        // Substring instead of replace
+        return id.StartsWith(flagPrefix) ? id.Substring(flagPrefix.Length) : id;
+    }
+
     public static string GetIdOfFlagInInventoryAndStorage()
     {
         var allItemsOfType =
@@ -358,7 +371,7 @@ public static class BoatUtil
             .Concat(GameManager.Instance.SaveData.Storage.GetAllItemsOfType<SpatialItemInstance>(ItemType.GENERAL, ItemSubtype.GENERAL))
             .ToItemData();
         var flag = allItemsOfType.FirstOrDefault(item => item is HarvestableItemData harvestableItem && harvestableItem.IsFlag());
-        var id = flag != null ? flag.id : string.Empty;
+        var id = flag != null ? RemoveFlagPrefix(flag.id) : string.Empty;
         WinchCore.Log.Debug($"GetIdOfFlagInInventoryAndStorage() returning {id}");
         return id;
     }
