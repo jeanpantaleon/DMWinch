@@ -355,6 +355,15 @@ public static class BoatUtil
         GameManager.Instance.DialogueRunner.Dialogue.AddOptions(options.ToArray());
     }
 
+    internal static readonly string flagPrefix = "flag-";
+    internal static string RemoveFlagPrefix(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return string.Empty;
+
+        // Substring instead of replace
+        return id.StartsWith(flagPrefix) ? id.Substring(flagPrefix.Length) : id;
+    }
+
     public static string GetIdOfFlagInInventoryAndStorage()
     {
         var allItemsOfType =
@@ -362,7 +371,7 @@ public static class BoatUtil
             .Concat(GameManager.Instance.SaveData.Storage.GetAllItemsOfType<SpatialItemInstance>(ItemType.GENERAL, ItemSubtype.GENERAL))
             .ToItemData();
         var flag = allItemsOfType.FirstOrDefault(item => item is HarvestableItemData harvestableItem && harvestableItem.IsFlag());
-        var id = flag != null ? flag.id.Replace("flag-", "") : string.Empty;
+        var id = flag != null ? RemoveFlagPrefix(flag.id) : string.Empty;
         WinchCore.Log.Debug($"GetIdOfFlagInInventoryAndStorage() returning {id}");
         return id;
     }
