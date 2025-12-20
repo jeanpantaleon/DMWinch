@@ -17,14 +17,20 @@ public static class Loader
     public static ModConfig ModConfig => ModConfig.GetConfig();
     public static ExampleConfig Config;
 
-    public static string BasePath => ModAssemblyLoader.GetCurrentMod().BasePath;
+
+    public static ModAssembly ModAssembly => ModAssemblyLoader.GetCurrentMod();
+    public static string BasePath => ModAssembly.BasePath;
+    public static string GUID => ModAssembly.GUID;
+
 
     public static ExampleSaveParticipant Participant = ExampleSaveParticipant.Instance;
 
     public static ExampleRecipeData exampleRecipeData;
 
+
     public static ItemData MilkBucket => ItemUtil.GetModdedItemData("exampleitems.milk");
     public static VibrationData MilkBucketVibrationData => VibrationUtil.GetModdedVibrationData("exampleitems.milk");
+
 
     public static void Initialize()
     {
