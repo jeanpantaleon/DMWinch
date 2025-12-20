@@ -52,6 +52,7 @@ internal class WinchBehaviour : USingleton<WinchBehaviour>
     private void OnGameLoaded()
     {
         WinchCore.Log.Debug("[WinchBehaviour] OnGameLoaded()");
+        DockUtil.AddShipwrightMaterialsTab();
     }
 
     private void OnGameStartable()

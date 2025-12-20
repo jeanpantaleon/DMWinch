@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.UI;
 using Winch.Config;
 using Winch.Core;
 using Winch.Data.Shop;
@@ -240,8 +239,13 @@ public static class Loader
         gridShopJunk.gridConfiguration.mainItemSubtype |= ExampleEnums.ItemSubtypes.EXAMPLE;
         gridShopJunk.Reinit();
 
+        // Add a subtype to a grid
+        var gridShipwrightJunk = GameManager.Instance.SaveData.GetGridByKey(GridKey.SHIPWRIGHT_MATERIALS);
+        gridShipwrightJunk.gridConfiguration.mainItemSubtype |= ExampleEnums.ItemSubtypes.EXAMPLE;
+        gridShipwrightJunk.Reinit();
+
         // Add a subtype to a market/shipyard
-        var junkShipyards = DockUtil.GetAllShipyardDestinations().Where(shipyard => shipyard.marketTabs.Any(marketTab => marketTab.gridKey == GridKey.TRAVELLING_MERCHANT_MATERIALS));
+        var junkShipyards = DockUtil.GetAllShipyardDestinations().Where(shipyard => shipyard.marketTabs.Any(marketTab => marketTab.gridKey == GridKey.TRAVELLING_MERCHANT_MATERIALS || marketTab.gridKey == GridKey.SHIPWRIGHT_MATERIALS));
         foreach (var junkShipyard in junkShipyards)
         {
             junkShipyard.itemSubtypesBought |= ExampleEnums.ItemSubtypes.EXAMPLE;

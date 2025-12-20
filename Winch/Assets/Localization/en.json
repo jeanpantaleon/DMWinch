@@ -6,6 +6,7 @@
 	"settings.tab.mods": "Mods",
 	"settings.mods.footer.list": "List",
 	"settings.mods.footer.options": "Options",
+	"title.shipwright-materials": "Shipwright - Miscellaneous",
 	"winch.name": "Winch",
 	"winch.writelogstofile.title": "Write logs to file",
 	"winch.writelogstofile.tooltip": "Whether to write logs to a file.\n\nREQUIRES RESTART TO TAKE EFFECT.",

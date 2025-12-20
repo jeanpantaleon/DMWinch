@@ -947,4 +947,27 @@ public static class DockUtil
         vcam.AddCinemachineComponent<CinemachineComposer>();
         return vcam;
     }
+
+    internal static void AddShipwrightMaterialsTab()
+    {
+        try
+        {
+            var shipwright = GetAllShipyardDestinations().FirstOrDefault(shipyard => shipyard.name == "Shipwright");
+            shipwright.marketTabs.Add(new MarketTabConfig
+            {
+                gridKey = GridKey.SHIPWRIGHT_MATERIALS,
+                tabSprite = TextureUtil.GetSprite("JunkIcon"),
+                titleKey = LocalizationUtil.CreateStringsReference("title.shipwright-materials"),
+                isUnlockedBasedOnDialogue = false,
+                unlockDialogueNodes = new List<string>()
+            });
+            shipwright.itemSubtypesBought |= ItemSubtype.GENERAL;
+            shipwright.itemSubtypesBought |= ItemSubtype.MATERIAL;
+
+        }
+        catch (Exception ex)
+        {
+            WinchCore.Log.Error($"Failed to add Shipwright Materials tab: {ex}");
+        }
+    }
 }
