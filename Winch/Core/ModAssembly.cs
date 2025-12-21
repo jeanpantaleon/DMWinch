@@ -31,9 +31,9 @@ public class ModAssembly
     public string Preload => Metadata.ContainsKey("Preload") ? Metadata["Preload"].ToString() : string.Empty;
     public string Entrypoint => Metadata.ContainsKey("Entrypoint") ? Metadata["Entrypoint"].ToString() : string.Empty;
     public bool ApplyPatches => Metadata.ContainsKey("ApplyPatches") && (bool)Metadata["ApplyPatches"];
-    public ModConfig? Config => ModConfig.TryGetConfig(BasePathFolderName, out var config) ? config : null;
-    public bool DefaultConfig => ModConfig.HasDefaultConfig(BasePathFolderName);
-    public ModConfig GetConfig() => ModConfig.GetConfig(BasePathFolderName);
+    public ModConfig? Config => ModConfig.TryGetConfig(GUID, out var config) ? config : null;
+    public bool DefaultConfig => ModConfig.HasDefaultConfig(GUID);
+    public ModConfig GetConfig() => ModConfig.GetConfig(GUID);
 
     private ModAssembly(string basePath) {
         BasePath = basePath;
