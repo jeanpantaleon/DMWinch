@@ -51,6 +51,15 @@ public static class ModAssemblyLoader
         try
         {
             ModAssembly mod = ModAssembly.FromPath(path);
+
+            // Check for duplicate GUID
+            if (_installedAssemblies.Values.Any(m => m.GUID == mod.GUID))
+            {
+                WinchCore.Log.Error($"Cannot load mod '{modName}': another mod with GUID '{mod.GUID}' is already loaded.");
+                ErrorMods.Add(modName);
+                return;
+            }
+
             mod.LoadAssembly();
             _installedAssemblies.Add(modName, mod);
         }
