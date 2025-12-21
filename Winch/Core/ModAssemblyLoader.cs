@@ -20,7 +20,7 @@ public static class ModAssemblyLoader
 
     static ModAssemblyLoader()
     {
-        ModConfig.GetRelevantModName = GetCurrentModFolderName;
+        ModConfig.GetRelevantModName = GetCurrentModGUID;
     }
 
     internal static void LoadModAssemblies()
@@ -185,9 +185,9 @@ public static class ModAssemblyLoader
         return ReflectionUtil.GetRelevantModAssembly();
     }
 
-    internal static string GetCurrentModFolderName()
+    internal static string GetCurrentModGUID()
     {
-        return GetCurrentMod()?.BasePathFolderName ?? string.Empty;
+        return GetCurrentMod()?.GUID ?? string.Empty;
     }
 
     /// <summary>
