@@ -44,6 +44,8 @@ public class ModAssembly
 
         string metaText = File.ReadAllText(metaPath);
         Metadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(metaText) ?? throw new InvalidOperationException("Unable to parse mod_meta.json file.");
+
+        ModConfig.RegisterBasePath(GUID, BasePath);
     }
 
     internal static ModAssembly FromPath(string path)
