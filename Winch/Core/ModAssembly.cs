@@ -82,7 +82,7 @@ public class ModAssembly
         _guid = GetRequiredMetadataString("ModGUID");
         _assemblyRelativePath = GetRequiredMetadataString("ModAssembly");
         _name = GetRequiredMetadataString("Name").Spaced();
-        _author = GetRequiredMetadataString("Author");
+        _author = GetRecommendedMetadataString("Author");
         _version = GetRequiredMetadataString("Version");
         _minWinchVersion = GetMetadataString("MinWinchVersion");
         _dependencies = GetMetadataStringArray("Dependencies");
@@ -97,6 +97,16 @@ public class ModAssembly
     private string GetRequiredMetadataString(string key)
     {
         return GetMetadataString(key) ?? throw new MissingFieldException($"Required metadata field '{key}' is missing or empty in {Constants.ModManifestFileName} for '{BasePathFolderName}'.");
+    }
+
+    private string GetRecommendedMetadataString(string key)
+    {
+        var value = GetMetadataString(key);
+
+        if (string.IsNullOrWhiteSpace(value))
+            WinchCore.Log.Warn($"Required metadata field '{key}' is missing or empty in {Constants.ModManifestFileName} for '{BasePathFolderName}'.");
+
+        return value;
     }
 
     private string GetMetadataString(string key)
