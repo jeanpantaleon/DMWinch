@@ -160,8 +160,8 @@ public static class ModAssemblyLoader
     /// <summary>
     /// Get an <see cref="ModAssembly"/> instance from a Mod GUID
     /// </summary>
-    /// <param name="id">The ModGUID</param>
-    /// <returns>The corresponding <see cref="ModAssembly"/>, or null</returns>
+    /// <param name="id">The GUID of the <see cref="ModAssembly"/> you are getting.</param>
+    /// <returns>The corresponding <see cref="ModAssembly"/>, or null if not found</returns>
     internal static ModAssembly? GetMod(string id)
     {
         return _installedAssemblies.TryGetValue(id, out var mod) ? mod : null;
@@ -169,12 +169,22 @@ public static class ModAssemblyLoader
 
     internal static Assembly[] GetAssemblies()
     {
-        return _installedAssemblies.Values.Select(x => x.LoadedAssembly).WhereNotNull().ToArray();
+        return _installedAssemblies.Values
+            .Select(x => x?.LoadedAssembly)
+            .WhereNotNull()
+            .ToArray();
     }
 
-    internal static ModAssembly GetModForAssembly(Assembly a)
+    internal static Assembly? GetAssemblyForMod(string modGUID)
     {
-        return _installedAssemblies.Values.FirstOrDefault((x) => x.LoadedAssembly != null && x.LoadedAssembly == a);
+        if (string.IsNullOrEmpty(modGUID)) return null;
+        return _installedAssemblies.TryGetValue(modGUID, out var mod) ? mod?.LoadedAssembly : null;
+    }
+
+    internal static ModAssembly? GetModForAssembly(Assembly a)
+    {
+        if (a == null) return null;
+        return _installedAssemblies.Values.FirstOrDefault(x => x?.LoadedAssembly != null && x.LoadedAssembly == a);
     }
 
     /// <summary>
@@ -184,6 +194,7 @@ public static class ModAssemblyLoader
     /// <returns>Whether any enabled mod matches the given <paramref name="modGUID"/></returns>
     public static bool IsModEnabled(string modGUID)
     {
+        if (string.IsNullOrEmpty(modGUID)) return false;
         return EnabledModAssemblies.ContainsKey(modGUID);
     }
 
