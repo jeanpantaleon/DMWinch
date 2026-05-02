@@ -47,7 +47,7 @@ public static class ModAssemblyLoader
     private static void RegisterModAssembly(string path)
     {
         string modName = Path.GetFileName(path);
-        WinchCore.Log.Debug($"Loading '{modName}'...");
+        WinchCore.Log.Debug($"Loading mod '{modName}' at [{path}]");
         try
         {
             ModAssembly mod = ModAssembly.FromPath(path);
