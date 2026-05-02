@@ -30,7 +30,17 @@ public static class ModAssemblyLoader
             Directory.CreateDirectory(Paths.ModsPath);
         }
 
-        string[] modDirs = Directory.GetDirectories(Paths.ModsPath);
+        // Find mod metadata files (mod_meta.json) and load mods from their containing folders
+        string[] metaFiles = Directory.Exists(Paths.ModsPath)
+            ? Directory.GetFiles(Paths.ModsPath, "mod_meta.json", SearchOption.AllDirectories)
+            : Array.Empty<string>();
+
+        string[] modDirs = metaFiles
+            .Select(f => Path.GetDirectoryName(f))
+            .Where(d => !string.IsNullOrEmpty(d))
+            .Distinct()
+            .ToArray();
+
         WinchCore.Log.Info($"Loading {modDirs.Length} mod assemblies...");
         foreach (string modDir in modDirs)
         {
