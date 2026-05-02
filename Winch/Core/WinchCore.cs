@@ -63,6 +63,7 @@ public static class WinchCore
             Log.Debug($"Game executable path: {Paths.ExecutablePath}");
             Log.Debug($"Unity Managed directory: {Paths.ManagedPath}");
             Log.Debug($"Winch path: {Paths.WinchPath}");
+            Log.Debug($"Mods path: {Paths.ModsPath}");
         }
         catch (Exception e)
         {

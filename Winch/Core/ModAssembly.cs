@@ -4,6 +4,7 @@ using Sirenix.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Winch.Config;
 using Winch.Util;
@@ -13,24 +14,38 @@ namespace Winch.Core;
 public class ModAssembly
 {
     public readonly string BasePath;
-    public Dictionary<string, object> Metadata { get; private set; }
     public Assembly? LoadedAssembly { get; private set; }
+
+    private readonly Dictionary<string, object> _metadata;
+
+    // Cached metadata fields to avoid repeated dictionary lookups
+    private readonly string _guid;
+    private readonly string _assemblyRelativePath;
+    private readonly string _name;
+    private readonly string _author;
+    private readonly string _version;
+    private readonly string _minWinchVersion;
+    private readonly string[] _dependencies;
+    private readonly string[] _conflicts;
+    private readonly string _preload;
+    private readonly string _entrypoint;
+    private readonly bool _applyPatches;
 
     public string AssetsPath => Path.Combine(BasePath, "Assets");
     public string AssemblyName => LoadedAssembly != null ? LoadedAssembly.GetName().Name : string.Empty;
     public string BasePathFolderName => Path.GetFileName(BasePath);
-    public string GUID => Metadata.ContainsKey("ModGUID") ? Metadata["ModGUID"].ToString() : throw new MissingFieldException("No 'ModGUID' field found in Mod Metadata.");
-    public string AssemblyRelativePath => Metadata.ContainsKey("ModAssembly") ? Metadata["ModAssembly"].ToString() : throw new MissingFieldException("Property 'ModAssembly' not found in mod_meta.json");
-    public string Name => Metadata.ContainsKey("Name") ? Metadata["Name"].ToString().Spaced() : string.Empty;
-    public string CleanedUpName => Name.Replace("Dredge ", "").Replace("DREDGE ", "").Replace("D R E D G E ", "").Trim();
-    public string Author => Metadata.ContainsKey("Author") ? Metadata["Author"].ToString() : string.Empty;
-    public string Version => Metadata.ContainsKey("Version") ? Metadata["Version"].ToString() : throw new MissingFieldException("No 'Version' field found in Mod Metadata.");
-    public string MinWinchVersion => Metadata.ContainsKey("MinWinchVersion") ? Metadata["MinWinchVersion"].ToString() : string.Empty;
-    public string[] Dependencies => Metadata.ContainsKey("Dependencies") ? (((JArray)Metadata["Dependencies"]).ToObject<string[]>() ?? Array.Empty<string>()) : Array.Empty<string>();
-    public string[] Conflicts => Metadata.ContainsKey("Conflicts") ? (((JArray)Metadata["Conflicts"]).ToObject<string[]>() ?? Array.Empty<string>()) : Array.Empty<string>();
-    public string Preload => Metadata.ContainsKey("Preload") ? Metadata["Preload"].ToString() : string.Empty;
-    public string Entrypoint => Metadata.ContainsKey("Entrypoint") ? Metadata["Entrypoint"].ToString() : string.Empty;
-    public bool ApplyPatches => Metadata.ContainsKey("ApplyPatches") && (bool)Metadata["ApplyPatches"];
+    public string GUID => _guid;
+    public string AssemblyRelativePath => _assemblyRelativePath;
+    public string Name => _name;
+    public string CleanedUpName => _name.Replace("Dredge ", "").Replace("DREDGE ", "").Replace("D R E D G E ", "").Trim();
+    public string Author => _author;
+    public string Version => _version;
+    public string MinWinchVersion => _minWinchVersion;
+    public string[] Dependencies => _dependencies;
+    public string[] Conflicts => _conflicts;
+    public string Preload => _preload;
+    public string Entrypoint => _entrypoint;
+    public bool ApplyPatches => _applyPatches;
     public ModConfig? Config => ModConfig.TryGetConfig(GUID, out var config) ? config : null;
     public bool DefaultConfig => ModConfig.HasDefaultConfig(GUID);
     public ModConfig GetConfig() => ModConfig.GetConfig(GUID);
@@ -40,12 +55,118 @@ public class ModAssembly
 
         string metaPath = Path.Combine(basePath, "mod_meta.json");
         if (!File.Exists(metaPath))
-            throw new FileNotFoundException("Missing mod_meta.json file.");
+            throw new FileNotFoundException($"Missing mod_meta.json file at '{basePath}'.");
 
         string metaText = File.ReadAllText(metaPath);
-        Metadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(metaText) ?? throw new InvalidOperationException("Unable to parse mod_meta.json file.");
+        _metadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(metaText) ?? throw new InvalidOperationException($"Unable to parse mod_meta.json file at '{basePath}'.");
 
-        ModConfig.RegisterBasePath(GUID, BasePath);
+        // Normalize JToken/JValue entries so downstream lookups are simpler
+        var keys = _metadata.Keys.ToArray();
+        foreach (var k in keys)
+        {
+            if (_metadata[k] is JToken token)
+            {
+                try
+                {
+                    _metadata[k] = token.Type == JTokenType.Array ? token : token.ToObject<object>() ?? token;
+                }
+                catch
+                {
+                    _metadata[k] = token;
+                }
+            }
+        }
+
+        // Cache commonly used metadata values to avoid repeated dictionary access
+        _guid = GetRequiredMetadataString("ModGUID");
+        _assemblyRelativePath = GetRequiredMetadataString("ModAssembly");
+        _name = GetRequiredMetadataString("Name").Spaced();
+        _author = GetRequiredMetadataString("Author");
+        _version = GetRequiredMetadataString("Version");
+        _minWinchVersion = GetMetadataString("MinWinchVersion");
+        _dependencies = GetMetadataStringArray("Dependencies");
+        _conflicts = GetMetadataStringArray("Conflicts");
+        _preload = GetMetadataString("Preload");
+        _entrypoint = GetMetadataString("Entrypoint");
+        _applyPatches = GetMetadataBool("ApplyPatches");
+
+        ModConfig.RegisterBasePath(_guid, BasePath);
+    }
+
+    private string GetRequiredMetadataString(string key)
+    {
+        return GetMetadataString(key) ?? throw new MissingFieldException($"Required metadata field '{key}' is missing or empty in mod_meta.json for '{BasePathFolderName}'.");
+    }
+
+    private string GetMetadataString(string key)
+    {
+        var value = GetMetadata<string>(key);
+
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        return value;
+    }
+
+    private string[] GetMetadataStringArray(string key)
+    {
+        return GetMetadataWithDefault(key, Array.Empty<string>());
+    }
+
+    private bool GetMetadataBool(string key)
+    {
+        return GetMetadataWithDefault(key, false);
+    }
+
+    private int GetMetadataInt(string key)
+    {
+        return GetMetadataWithDefault(key, 0);
+    }
+
+    private double GetMetadataDouble(string key)
+    {
+        return GetMetadataWithDefault(key, 0);
+    }
+
+    private T GetMetadataWithDefault<T>(string key, T defaultValue)
+    {
+        return GetMetadata<T>(key) ?? defaultValue;
+    }
+
+    private T? GetMetadata<T>(string key)
+    {
+        if (!_metadata.TryGetValue(key, out var raw) || raw == null)
+            return default;
+
+        // If the raw value is already the target type, return it
+        if (raw is T t)
+            return t;
+
+        // Handle JToken conversions
+        if (raw is JToken jt)
+        {
+            try { return jt.ToObject<T>(); } catch { return default; }
+        }
+
+        try
+        {
+            // Attempt JSON round-trip for complex conversions
+            var json = JsonConvert.SerializeObject(raw);
+            return JsonConvert.DeserializeObject<T>(json);
+        }
+        catch
+        {
+            try
+            {
+                // Final fallback: attempt direct conversion
+                return (T)Convert.ChangeType(raw, typeof(T));
+            }
+            catch
+            {
+                // If all conversions fail, return defaults
+                return default;
+            }
+        }
     }
 
     internal static ModAssembly FromPath(string path)
@@ -63,13 +184,26 @@ public class ModAssembly
 
         CheckCompatibility();
 
-        LoadedAssembly = Assembly.LoadFrom(assemblyPath);
-
-        WinchCore.Log.Debug($"Loaded Assembly '{LoadedAssembly.GetName().Name}'.");
-
-        if (Metadata.ContainsKey("Preload"))
+        try
         {
-            ProcessPreload();
+            LoadedAssembly = Assembly.LoadFrom(assemblyPath);
+            WinchCore.Log.Debug($"Loaded Assembly '{LoadedAssembly?.GetName().Name}' for mod '{GUID}'.");
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to load assembly for mod '{GUID}' from path '{assemblyPath}'", ex);
+        }
+
+        if (!string.IsNullOrEmpty(Preload))
+        {
+            try
+            {
+                ProcessPreload();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Preload failed for mod '{GUID}'", ex);
+            }
         }
     }
 
@@ -80,13 +214,13 @@ public class ModAssembly
 
         WinchCore.Log.Debug($"Initializing ModAssembly {LoadedAssembly.GetName().Name}...");
 
-        if (Metadata.ContainsKey("Dependencies"))
+        if (Dependencies.Length > 0)
             ProcessDependencies();
 
-        if (Metadata.ContainsKey("Conflicts"))
+        if (Conflicts.Length > 0)
             ProcessConflicts();
 
-        if (Metadata.ContainsKey("Entrypoint"))
+        if (!string.IsNullOrEmpty(Entrypoint))
             ProcessEntrypoint();
     }
 
@@ -131,8 +265,9 @@ public class ModAssembly
                 continue;
             }
 
-            string depName = dep.Contains("@") ? dep.Split('@')[0] : dep;
-            string? depVersion = dep.Contains("@") ? dep.Split('@')[1] : null;
+            var parts = dep.Split(new[] { '@' }, 2);
+            string depName = parts.Length > 0 ? parts[0] : string.Empty;
+            string? depVersion = parts.Length > 1 ? parts[1] : null;
 
             WinchCore.Log.Debug($"Dependency name: '{depName}', min version: ({depVersion ?? "any"})");
 
@@ -148,7 +283,7 @@ public class ModAssembly
                 WinchCore.Log.Warn($"No minimum version specified for dependency '{depName}' in mod {GUID}. Will attempt to load any version of the dependency, but this may cause version conflicts. Specify by appending '@<version>' to the dependency name in mod_meta.json.");
             }
 
-            bool executed;
+            bool executed = false;
             try
             {
                 executed = ModAssemblyLoader.ExecuteModAssembly(depName, depVersion);
@@ -156,7 +291,6 @@ public class ModAssembly
             catch (Exception ex)
             {
                 WinchCore.Log.Error($"Failed to execute dependency '{dep}' for mod {GUID}: {ex}");
-                executed = false;
             }
 
             if (!executed)
@@ -178,22 +312,31 @@ public class ModAssembly
         }
     }
 
+    private static readonly BindingFlags AnyStatic = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+
     private void ProcessEntrypoint()
     {
         string entrypointSetting = Entrypoint;
         if (!entrypointSetting.Contains("/"))
             throw new ArgumentException("Malformed Entrypoint in mod_meta.json");
 
-        string entrypointTypeName = entrypointSetting.Split('/')[0];
-        string entrypointMethodName = entrypointSetting.Split('/')[1];
+        var parts = entrypointSetting.Split(new[] { '/' }, 2);
+        string entrypointTypeName = parts[0];
+        string entrypointMethodName = parts.Length > 1 ? parts[1] : string.Empty;
 
         Type entrypointType = LoadedAssembly?.GetType(entrypointTypeName) ??
                               throw new EntryPointNotFoundException($"Could not find type {entrypointTypeName} in Mod Assembly");
-        MethodInfo entrypoint = entrypointType.GetMethod(entrypointMethodName) ??
-                                throw new EntryPointNotFoundException($"Could not find method {entrypointTypeName} in type {entrypointTypeName} in Mod Assembly");
+
+        var method = entrypointType.GetMethod(entrypointMethodName, AnyStatic);
+        if (method == null)
+            throw new EntryPointNotFoundException($"Could not find method {entrypointMethodName} in type {entrypointTypeName} in Mod Assembly");
+
+        if (method.GetParameters().Length > 0)
+            throw new EntryPointNotFoundException($"Entrypoint method {entrypointMethodName} in {entrypointTypeName} must take no parameters");
 
         WinchCore.Log.Debug($"Invoking entrypoint {entrypointType}.{entrypointMethodName}...");
-        entrypoint.Invoke(null, new object[0]);
+        try { method.Invoke(null, Array.Empty<object>()); }
+        catch (TargetInvocationException tie) { throw tie.InnerException ?? tie; }
     }
 
     private void ProcessPreload()
@@ -202,16 +345,23 @@ public class ModAssembly
         if (!preloadSetting.Contains("/"))
             throw new ArgumentException("Malformed Preload in mod_meta.json");
 
-        string preloadTypeName = preloadSetting.Split('/')[0];
-        string preloadMethodName = preloadSetting.Split('/')[1];
+        var parts = preloadSetting.Split(new[] { '/' }, 2);
+        string preloadTypeName = parts[0];
+        string preloadMethodName = parts.Length > 1 ? parts[1] : string.Empty;
 
         Type preloaderType = LoadedAssembly?.GetType(preloadTypeName) ??
                              throw new EntryPointNotFoundException($"Could not find type {preloadTypeName} in Mod Assembly");
-        MethodInfo preloader = preloaderType.GetMethod(preloadMethodName) ??
-                               throw new EntryPointNotFoundException($"Could not find method {preloadTypeName} in type {preloadTypeName} in Mod Assembly");
+
+        var method = preloaderType.GetMethod(preloadMethodName, AnyStatic);
+        if (method == null)
+            throw new EntryPointNotFoundException($"Could not find method {preloadMethodName} in type {preloadTypeName} in Mod Assembly");
+
+        if (method.GetParameters().Length > 0)
+            throw new EntryPointNotFoundException($"Preload method {preloadMethodName} in {preloadTypeName} must take no parameters");
 
         WinchCore.Log.Debug($"Invoking preloader {preloaderType}.{preloadMethodName}...");
-        preloader.Invoke(null, new object[0]);
+        try { method.Invoke(null, Array.Empty<object>()); }
+        catch (TargetInvocationException tie) { throw tie.InnerException ?? tie; }
     }
 
     public override string ToString() => GUID;
