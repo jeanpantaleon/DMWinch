@@ -84,27 +84,27 @@ public static class ModAssemblyLoader
         if (LoadedMods.Contains(modName))
             return true;
 
-        if (!EnabledModAssemblies.ContainsKey(modName))
+        if (!_installedAssemblies.ContainsKey(modName))
         {
             ErrorMods.Add(modName);
-            WinchCore.Log.Error($"Mod not loaded: {modName}");
+            WinchCore.Log.Error($"Mod '{modName}' not installed.");
             return false;
         }
 
-        if(minVersion != null)
+        if (!EnabledModAssemblies.ContainsKey(modName))
+        {
+            ErrorMods.Add(modName);
+            WinchCore.Log.Error($"Mod '{modName}' disabled.");
+            return false;
+        }
+
+        if (minVersion != null)
         {
             if (!VersionUtil.IsSameOrNewer(EnabledModAssemblies[modName].Version, minVersion))
             {
                 WinchCore.Log.Error($"Cannot satisfy minimum version constraint {minVersion} for {modName}");
                 return false;
             }
-        }
-
-        var modGUID = EnabledModAssemblies[modName].GUID;
-        if (!EnabledMods[modGUID])
-        {
-            WinchCore.Log.Info($"Mod '{modName}' disabled.");
-            return false;
         }
 
         ModAssemblyLoader.ForceModContext(EnabledModAssemblies[modName]);
