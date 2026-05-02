@@ -94,7 +94,10 @@ public static class ModAssemblyLoader
         if(minVersion != null)
         {
             if (!VersionUtil.IsSameOrNewer(EnabledModAssemblies[modName].Version, minVersion))
-                throw new Exception($"Cannot satisfy minimum version constraint {minVersion} for {modName}");
+            {
+                WinchCore.Log.Error($"Cannot satisfy minimum version constraint {minVersion} for {modName}");
+                return false;
+            }
         }
 
         var modGUID = EnabledModAssemblies[modName].GUID;

@@ -123,9 +123,43 @@ public class ModAssembly
         foreach (string dep in deps)
         {
             WinchCore.Log.Debug($"Processing dependency {dep}");
+
+            if (string.IsNullOrWhiteSpace(dep))
+            {
+                WinchCore.Log.Error($"Empty dependency entry in mod {GUID}");
+                ModAssemblyLoader.ErrorMods.Add(GUID);
+                continue;
+            }
+
             string depName = dep.Contains("@") ? dep.Split('@')[0] : dep;
             string? depVersion = dep.Contains("@") ? dep.Split('@')[1] : null;
-            if (!ModAssemblyLoader.ExecuteModAssembly(depName, depVersion))
+
+            WinchCore.Log.Debug($"Dependency name: '{depName}', min version: ({depVersion ?? "any"})");
+
+            if (string.IsNullOrWhiteSpace(depName))
+            {
+                WinchCore.Log.Error($"Malformed dependency '{dep}' in mod {GUID}");
+                ModAssemblyLoader.ErrorMods.Add(GUID);
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(depVersion))
+            {
+                WinchCore.Log.Warn($"No minimum version specified for dependency '{depName}' in mod {GUID}. Will attempt to load any version of the dependency, but this may cause version conflicts. Specify by appending '@<version>' to the dependency name in mod_meta.json.");
+            }
+
+            bool executed;
+            try
+            {
+                executed = ModAssemblyLoader.ExecuteModAssembly(depName, depVersion);
+            }
+            catch (Exception ex)
+            {
+                WinchCore.Log.Error($"Failed to execute dependency '{dep}' for mod {GUID}: {ex}");
+                executed = false;
+            }
+
+            if (!executed)
                 ModAssemblyLoader.ErrorMods.Add(GUID);
         }
     }
