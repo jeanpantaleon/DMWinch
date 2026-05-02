@@ -100,7 +100,7 @@ public class SliderInput : Input, ISubmitHandler, IEventSystemHandler
         OnSliderFocusChanged(false);
     }
 
-    public virtual void ForceSliderDeselect()
+    public virtual void ForceDeselect()
     {
         slider.interactable = false;
         EventSystem.current.SetSelectedGameObject(gameObject);

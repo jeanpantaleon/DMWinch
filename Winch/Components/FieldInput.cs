@@ -202,7 +202,7 @@ public class FieldInput : Input, ISubmitHandler, IEventSystemHandler
         OnFocusChanged(false);
     }
 
-    public virtual void ForceSliderDeselect()
+    public virtual void ForceDeselect()
     {
         inputField.interactable = false;
         EventSystem.current.SetSelectedGameObject(gameObject);

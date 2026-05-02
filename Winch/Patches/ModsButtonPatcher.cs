@@ -319,8 +319,8 @@ internal static class ModsButtonPatcher
     [HarmonyPatch(typeof(SettingsDialog), nameof(SettingsDialog.ForceSliderFocusExit))]
     public static void SettingsDialog_ForceSliderFocusExit_Prefix(SettingsDialog __instance)
     {
-        if (activeSlider != null) activeSlider.ForceSliderDeselect();
-        if (activeField != null) activeField.ForceSliderDeselect();
+        if (activeSlider != null) activeSlider.ForceDeselect();
+        if (activeField != null) activeField.ForceDeselect();
     }
 
     [HarmonyPrefix]
