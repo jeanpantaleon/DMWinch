@@ -1,5 +1,6 @@
 {
 	"Name": "Intro Skipper",
+	"Author": "Hacktix",
 	"ModGUID": "hacktix.introskipper",
 	"Version": "1.0.1",
 	"ModAssembly": "IntroSkipper.dll",

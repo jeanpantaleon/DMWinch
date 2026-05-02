@@ -1,0 +1,13 @@
+{
+    "location": {
+        "x": 415.0,
+        "y": 0.0,
+        "z": -260.0
+    },
+    "harvestableParticlePrefab": "MediumRoundFishParticles",
+    "items": [ "cod" ],
+    "startStock": 5,
+    "maxStock": 10,
+    "doesRestock": true,
+    "usesTimeSpecificStock": false
+}

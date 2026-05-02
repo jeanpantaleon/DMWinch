@@ -51,13 +51,13 @@ internal static class ModsButtonPatcher
             scrollbarRect.offsetMax = new Vector2(scrollbarRect.offsetMax.x, otherScroller.offsetMax.y);
             var modsHeader = controlsTabbedPanel.panel.container.transform.Find("ControlEntriesHeader").Instantiate(modsPanel.container.transform, false).Rename("Header");
             modsHeader.DestroyAllChildrenImmediate(0);
-            var headerText = modsHeader.Find("ActionLabel").Rename("Label").gameObject;
+            var headerText = modsHeader.Find("ActionLabel").Rename("LabelLocalized").gameObject;
             var headerTextLocalized = headerText.Instantiate(headerText.transform.parent, false).gameObject.AddComponent<LocalizedLabel>();
             var labelLocalized = headerTextLocalized.Instantiate(prefabs, false);
             labelLocalized.gameObject.Activate();
             var headerTextUnlocalized = headerText.AddComponent<Label>();
             var label = headerTextUnlocalized.Instantiate(prefabs, false);
-            label.gameObject.Activate();
+            label.gameObject.Rename("LabelUnlocalized").Activate();
             controlsTabbedPanel.panel.container.transform.Find("Image").Instantiate(modsPanel.container.transform, false).Rename("ScrollerTopImage");
             controlsTabbedPanel.panel.container.transform.Find("ScrollerBottomImage").Instantiate(modsPanel.container.transform, false);
             var modsFooter = controlsTabbedPanel.panel.container.transform.Find("Footers").Instantiate(modsPanel.container.transform, false).Rename("Footer");
@@ -104,6 +104,8 @@ internal static class ModsButtonPatcher
             modsTab.labelLocalizedPrefab = labelLocalized;
 
             var dropdownInput = modsTab.dropdownPrefab = generalTabbedPanel.panel.container.GetComponentsInChildren<DropdownSettingInput>(true).Where(dsi => dsi.HasComponent<LanguageSelectorDropdown>()).FirstOrDefault().gameObject.Instantiate(prefabs, false).Rename("Dropdown").AddComponent<DropdownInput>();
+            var dropdownContainerRect = dropdownInput.GetComponent<RectTransform>();
+            dropdownInput.transform.localPosition = Vector3.zero;
             dropdownInput.gameObject.RemoveComponentImmediate<LanguageSelectorDropdown>();
             var dropdownOld = dropdownInput.GetComponent<DropdownSettingInput>();
             dropdownInput.dropdown = dropdownOld.dropdown;
@@ -121,6 +123,7 @@ internal static class ModsButtonPatcher
             dropdownInput.gameObject.Activate();
 
             var colorDropdownInput = modsTab.colorDropdownPrefab = generalTabbedPanel.panel.transform.parent.GetComponentInChildren<ColorDropdown>(true).gameObject.Instantiate(prefabs, false).Rename("ColorDropdown").AddComponent<ColorDropdownInput>();
+            colorDropdownInput.transform.localPosition = Vector3.zero;
             colorDropdownInput.gameObject.RemoveComponentImmediate<LanguageSelectorDropdown>();
             var colorDropdownOld = colorDropdownInput.GetComponent<DropdownSettingInput>();
             var colorOld = colorDropdownInput.GetComponent<ColorDropdown>();
@@ -142,6 +145,7 @@ internal static class ModsButtonPatcher
             colorDropdownInput.gameObject.Activate();
 
             var ooDropdownInput = modsTab.onOffDropdownPrefab = generalTabbedPanel.panel.container.GetComponentsInChildren<DropdownSettingInput>(true).Where(dsi => dsi.HasComponent<LanguageSelectorDropdown>()).FirstOrDefault().gameObject.Instantiate(prefabs, false).Rename("OnOffDropdown").AddComponent<OnOffDropdownInput>();
+            ooDropdownInput.transform.localPosition = Vector3.zero;
             ooDropdownInput.gameObject.RemoveComponentImmediate<LanguageSelectorDropdown>();
             var ooDropdownOld = ooDropdownInput.GetComponent<DropdownSettingInput>();
             ooDropdownInput.dropdown = ooDropdownOld.dropdown;
@@ -159,6 +163,7 @@ internal static class ModsButtonPatcher
             ooDropdownInput.gameObject.Activate();
 
             var sliderInput = modsTab.sliderPrefab = generalTabbedPanel.panel.transform.parent.GetComponentInChildren<SliderSettingInput>(true).gameObject.Instantiate(prefabs, false).Rename("Slider").AddComponent<SliderInput>();
+            sliderInput.transform.localPosition = Vector3.zero;
             sliderInput.gameObject.RemoveComponentImmediate<SKUSpecificLocalizedString>();
             var sliderOld = sliderInput.GetComponent<SliderSettingInput>();
             sliderInput.slider = sliderOld.slider;
@@ -172,16 +177,62 @@ internal static class ModsButtonPatcher
             sliderInput.gameObject.Activate();
 
             var inputFieldContainer = modsTab.inputFieldPrefab = modsTab.sliderPrefab.gameObject.Instantiate(prefabs, false).Rename("InputField").AddComponent<FieldInput>(); // TODO: Make these input fields a little better on controller
+            var inputFieldRect = inputFieldContainer.GetComponent<RectTransform>();
+            inputFieldRect.anchorMin = dropdownContainerRect.anchorMin;
+            inputFieldRect.anchorMax = dropdownContainerRect.anchorMax;
+            inputFieldRect.pivot = dropdownContainerRect.pivot;
+            inputFieldRect.offsetMin = dropdownContainerRect.offsetMin;
+            inputFieldRect.offsetMax = dropdownContainerRect.offsetMax;
+            inputFieldRect.sizeDelta = dropdownContainerRect.sizeDelta;
+            inputFieldRect.anchoredPosition = dropdownContainerRect.anchoredPosition;
             inputFieldContainer.gameObject.RemoveComponentImmediate<LanguageSelectorDropdown>();
             var inputFieldOld = inputFieldContainer.GetComponent<SliderInput>();
-            inputFieldContainer.localizedStringField = inputFieldOld.localizedStringField;
+            inputFieldOld.localizedStringField.gameObject.DestroyImmediate();
+            var dropdownLabelContainer = dropdownInput.gameObject.FindChildWithExactName("LabelContainer");
+            var clonedLabelContainer = dropdownLabelContainer.Instantiate(inputFieldContainer.transform, false).Rename("LabelContainer");
+            clonedLabelContainer.transform.SetAsFirstSibling();
+            var clonedLabel = clonedLabelContainer.FindChildWithExactName("DropdownLabel");
+            clonedLabel.name = "Label";
+            inputFieldContainer.localizedStringField = clonedLabel.GetComponent<LocalizeStringEvent>();
             var inputField = Resources.FindObjectsOfTypeAll<TMPro.TMP_InputField>().FirstOrDefault(inFi => inFi.name == "DetailField").Instantiate(inputFieldContainer.transform, true).Rename("InputField");
             inputField.image.sprite = dropdownInput.dropdown.image.sprite;
             inputField.image.color = dropdownInput.dropdown.image.color;
-            inputField.placeholder.color = dropdownInput.dropdown.itemText.color/2;
-            ((TMP_Text)inputField.placeholder).enableAutoSizing = dropdownInput.dropdown.itemText.enableAutoSizing;
+            var inputFieldPlaceholder = ((TMP_Text)inputField.placeholder);
+            inputFieldPlaceholder.color = dropdownInput.dropdown.itemText.color/2;
+            inputFieldPlaceholder.enableAutoSizing = dropdownInput.dropdown.itemText.enableAutoSizing;
             inputField.textComponent.color = dropdownInput.dropdown.itemText.color;
             inputField.textComponent.enableAutoSizing = dropdownInput.dropdown.itemText.enableAutoSizing;
+
+            var inputFontBypass = inputField.textComponent.GetOrAddComponent<LocalizeFontBypass>();
+            inputFontBypass.textField = (TextMeshProUGUI)inputField.textComponent;
+            inputFontBypass.tableString = "Fonts";
+            inputFontBypass.tableEntryString = "DefaultFont";
+            var placeholderFontBypass = inputFieldPlaceholder.GetOrAddComponent<LocalizeFontBypass>();
+            placeholderFontBypass.textField = (TextMeshProUGUI)inputFieldPlaceholder;
+            placeholderFontBypass.tableString = "Fonts";
+            placeholderFontBypass.tableEntryString = "DefaultFont";
+
+
+            inputField.textViewport.anchorMin = dropdownInput.dropdown.captionText.rectTransform.anchorMin;
+            inputField.textViewport.anchorMax = dropdownInput.dropdown.captionText.rectTransform.anchorMax;
+            inputField.textViewport.pivot = dropdownInput.dropdown.captionText.rectTransform.pivot;
+            inputField.textViewport.offsetMin = dropdownInput.dropdown.captionText.rectTransform.offsetMin;
+            inputField.textViewport.offsetMax = dropdownInput.dropdown.captionText.rectTransform.offsetMax;
+            inputField.textViewport.sizeDelta = dropdownInput.dropdown.captionText.rectTransform.sizeDelta;
+            inputField.textViewport.anchoredPosition = dropdownInput.dropdown.captionText.rectTransform.anchoredPosition;
+
+            inputField.textComponent.fontSizeMin = dropdownInput.dropdown.captionText.fontSizeMin;
+            inputField.textComponent.fontSizeMax = dropdownInput.dropdown.captionText.fontSizeMax;
+            inputField.textComponent.alignment = dropdownInput.dropdown.captionText.alignment;
+            inputField.textComponent.extraPadding = dropdownInput.dropdown.captionText.extraPadding;
+            inputField.textComponent.vertexBufferAutoSizeReduction = dropdownInput.dropdown.captionText.vertexBufferAutoSizeReduction;
+
+            inputFieldPlaceholder.fontSizeMin = dropdownInput.dropdown.captionText.fontSizeMin;
+            inputFieldPlaceholder.fontSizeMax = dropdownInput.dropdown.captionText.fontSizeMax;
+            inputFieldPlaceholder.alignment = dropdownInput.dropdown.captionText.alignment;
+            inputFieldPlaceholder.extraPadding = dropdownInput.dropdown.captionText.extraPadding;
+            inputFieldPlaceholder.vertexBufferAutoSizeReduction = dropdownInput.dropdown.captionText.vertexBufferAutoSizeReduction;
+
             inputField.onFocusSelectAll = false;
             inputFieldContainer.inputField = inputField;
             inputField.gameObject.RemoveComponentImmediate<AeLa.EasyFeedback.Utility.TabNext>();
@@ -202,6 +253,7 @@ internal static class ModsButtonPatcher
             ifRect.pivot = dropdownRect.pivot;
             ifRect.offsetMin = dropdownRect.offsetMin;
             ifRect.offsetMax = dropdownRect.offsetMax;
+            ifRect.sizeDelta = dropdownRect.sizeDelta;
             ifRect.anchoredPosition = dropdownRect.anchoredPosition;
             inputFieldOld.slider.gameObject.DestroyImmediate();
             inputFieldOld.DestroyImmediate();
@@ -267,8 +319,8 @@ internal static class ModsButtonPatcher
     [HarmonyPatch(typeof(SettingsDialog), nameof(SettingsDialog.ForceSliderFocusExit))]
     public static void SettingsDialog_ForceSliderFocusExit_Prefix(SettingsDialog __instance)
     {
-        if (activeSlider != null) activeSlider.ForceSliderDeselect();
-        if (activeField != null) activeField.ForceSliderDeselect();
+        if (activeSlider != null) activeSlider.ForceDeselect();
+        if (activeField != null) activeField.ForceDeselect();
     }
 
     [HarmonyPrefix]

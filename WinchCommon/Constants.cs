@@ -9,6 +9,10 @@ public static class Constants
 {
 	public const string IP = "127.0.0.1";
 
+	public const string WinchTitle = "Winch";
+
+	public const string ModsFolderName = "Mods";
+
 	public const string WinchConfigFileName = "WinchConfig.json";
 
 	public const string WinchDefaultConfigFileName = "WinchDefaultConfig.json";
@@ -18,6 +22,8 @@ public static class Constants
 	public const string ModDefaultConfigFileName = "default_config.json";
 
 	public const string ModManifestFileName = "mod_meta.json";
+
+	public const string ModListFileName = "mod_list.json";
 
 	internal const string OldModConfigFileName = "Config.json";
 

@@ -135,7 +135,7 @@ class Initializer
 
     private static void InitializeWinchBehaviour()
     {
-        UnityEngine.Object.DontDestroyOnLoad(new GameObject("Winch", typeof(WinchBehaviour)));
+        UnityEngine.Object.DontDestroyOnLoad(new GameObject(Constants.WinchTitle, typeof(WinchBehaviour)));
     }
 
     internal static void InitializeVersionLabel()

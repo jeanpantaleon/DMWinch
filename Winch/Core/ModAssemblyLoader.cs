@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Winch.Config;
 using Winch.Util;
+using Winch;
 
 namespace Winch.Core;
 
@@ -20,7 +21,7 @@ public static class ModAssemblyLoader
 
     static ModAssemblyLoader()
     {
-        ModConfig.GetRelevantModName = GetCurrentModFolderName;
+        ModConfig.GetRelevantModName = GetCurrentModGUID;
     }
 
     internal static void LoadModAssemblies()
@@ -30,7 +31,17 @@ public static class ModAssemblyLoader
             Directory.CreateDirectory(Paths.ModsPath);
         }
 
-        string[] modDirs = Directory.GetDirectories(Paths.ModsPath);
+        // Find mod metadata files (mod_meta.json) and load mods from their containing folders
+        string[] metaFiles = Directory.Exists(Paths.ModsPath)
+            ? Directory.GetFiles(Paths.ModsPath, Constants.ModManifestFileName, SearchOption.AllDirectories)
+            : Array.Empty<string>();
+
+        string[] modDirs = metaFiles
+            .Select(f => Path.GetDirectoryName(f))
+            .Where(d => !string.IsNullOrEmpty(d))
+            .Distinct()
+            .ToArray();
+
         WinchCore.Log.Info($"Loading {modDirs.Length} mod assemblies...");
         foreach (string modDir in modDirs)
         {
@@ -47,10 +58,19 @@ public static class ModAssemblyLoader
     private static void RegisterModAssembly(string path)
     {
         string modName = Path.GetFileName(path);
-        WinchCore.Log.Debug($"Loading '{modName}'...");
+        WinchCore.Log.Debug($"Loading mod '{modName}' at [{path}]");
         try
         {
             ModAssembly mod = ModAssembly.FromPath(path);
+
+            // Check for duplicate GUID
+            if (_installedAssemblies.Values.Any(m => m.GUID == mod.GUID))
+            {
+                WinchCore.Log.Error($"Cannot load mod '{modName}': another mod with GUID '{mod.GUID}' is already loaded.");
+                ErrorMods.Add(modName);
+                return;
+            }
+
             mod.LoadAssembly();
             _installedAssemblies.Add(modName, mod);
         }
@@ -75,24 +95,27 @@ public static class ModAssemblyLoader
         if (LoadedMods.Contains(modName))
             return true;
 
+        if (!_installedAssemblies.ContainsKey(modName))
+        {
+            ErrorMods.Add(modName);
+            WinchCore.Log.Error($"Mod '{modName}' not installed.");
+            return false;
+        }
+
         if (!EnabledModAssemblies.ContainsKey(modName))
         {
             ErrorMods.Add(modName);
-            WinchCore.Log.Error($"Mod not loaded: {modName}");
+            WinchCore.Log.Error($"Mod '{modName}' disabled.");
             return false;
         }
 
-        if(minVersion != null)
+        if (minVersion != null)
         {
             if (!VersionUtil.IsSameOrNewer(EnabledModAssemblies[modName].Version, minVersion))
-                throw new Exception($"Cannot satisfy minimum version constraint {minVersion} for {modName}");
-        }
-
-        var modGUID = EnabledModAssemblies[modName].GUID;
-        if (!EnabledMods[modGUID])
-        {
-            WinchCore.Log.Info($"Mod '{modName}' disabled.");
-            return false;
+            {
+                WinchCore.Log.Error($"Cannot satisfy minimum version constraint {minVersion} for {modName}");
+                return false;
+            }
         }
 
         ModAssemblyLoader.ForceModContext(EnabledModAssemblies[modName]);
@@ -117,13 +140,13 @@ public static class ModAssemblyLoader
     {
         try
         {
-            string modListPath = Path.Combine(Paths.WinchRootPath, "mod_list.json");
+            string modListPath = Paths.ModListPath;
 
             if (File.Exists(modListPath))
             {
                 string modList = File.ReadAllText(modListPath);
                 EnabledMods = JsonConvert.DeserializeObject<Dictionary<string, bool>>(modList)
-                              ?? throw new InvalidOperationException("Unable to parse mod_list.json file.");
+                              ?? throw new InvalidOperationException($"Unable to parse {Constants.ModListFileName} file.");
             }
 
             foreach (string mod in _installedAssemblies.Keys)
@@ -148,8 +171,8 @@ public static class ModAssemblyLoader
     /// <summary>
     /// Get an <see cref="ModAssembly"/> instance from a Mod GUID
     /// </summary>
-    /// <param name="id">The ModGUID</param>
-    /// <returns>The corresponding <see cref="ModAssembly"/>, or null</returns>
+    /// <param name="id">The GUID of the <see cref="ModAssembly"/> you are getting.</param>
+    /// <returns>The corresponding <see cref="ModAssembly"/>, or null if not found</returns>
     internal static ModAssembly? GetMod(string id)
     {
         return _installedAssemblies.TryGetValue(id, out var mod) ? mod : null;
@@ -157,12 +180,22 @@ public static class ModAssemblyLoader
 
     internal static Assembly[] GetAssemblies()
     {
-        return _installedAssemblies.Values.Select(x => x.LoadedAssembly).WhereNotNull().ToArray();
+        return _installedAssemblies.Values
+            .Select(x => x?.LoadedAssembly)
+            .WhereNotNull()
+            .ToArray();
     }
 
-    internal static ModAssembly GetModForAssembly(Assembly a)
+    internal static Assembly? GetAssemblyForMod(string modGUID)
     {
-        return _installedAssemblies.Values.FirstOrDefault((x) => x.LoadedAssembly != null && x.LoadedAssembly == a);
+        if (string.IsNullOrEmpty(modGUID)) return null;
+        return _installedAssemblies.TryGetValue(modGUID, out var mod) ? mod?.LoadedAssembly : null;
+    }
+
+    internal static ModAssembly? GetModForAssembly(Assembly a)
+    {
+        if (a == null) return null;
+        return _installedAssemblies.Values.FirstOrDefault(x => x?.LoadedAssembly != null && x.LoadedAssembly == a);
     }
 
     /// <summary>
@@ -172,6 +205,7 @@ public static class ModAssemblyLoader
     /// <returns>Whether any enabled mod matches the given <paramref name="modGUID"/></returns>
     public static bool IsModEnabled(string modGUID)
     {
+        if (string.IsNullOrEmpty(modGUID)) return false;
         return EnabledModAssemblies.ContainsKey(modGUID);
     }
 
@@ -185,9 +219,9 @@ public static class ModAssemblyLoader
         return ReflectionUtil.GetRelevantModAssembly();
     }
 
-    internal static string GetCurrentModFolderName()
+    internal static string GetCurrentModGUID()
     {
-        return GetCurrentMod()?.BasePathFolderName ?? string.Empty;
+        return GetCurrentMod()?.GUID ?? string.Empty;
     }
 
     /// <summary>

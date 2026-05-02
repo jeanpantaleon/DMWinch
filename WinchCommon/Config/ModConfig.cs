@@ -5,6 +5,7 @@ namespace Winch.Config;
 public class ModConfig : JSONConfig
 {
     private static Dictionary<string, string> DefaultConfigs = new Dictionary<string, string>();
+    private static Dictionary<string, string> BasePaths = new Dictionary<string, string>();
     private static Dictionary<string, ModConfig> Instances = new Dictionary<string, ModConfig>();
 
     private ModConfig(string path, string defaultPath) : base(path, defaultPath)
@@ -30,7 +31,7 @@ public class ModConfig : JSONConfig
             return path;
         else
         {
-            //WinchCore.Log.Error($"No 'DefaultConfig' attribute found in mod_meta.json for {modName}!");
+            //WinchCore.Log.Error($"No 'DefaultConfig' attribute found in {Constants.ModManifestFileName} for {modName}!");
             throw new KeyNotFoundException($"No '{Constants.ModDefaultConfigFileName}' file found in folder for {modName}!");
         }
     }
@@ -38,6 +39,8 @@ public class ModConfig : JSONConfig
     private static string GetBasePath(string modName)
     {
         if (string.IsNullOrWhiteSpace(modName)) throw new ArgumentNullException("modName");
+
+        if (BasePaths.TryGetValue(modName, out var basePath)) return basePath;
 
         return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Mods", modName);
     }
@@ -153,5 +156,12 @@ public class ModConfig : JSONConfig
     {
         if (string.IsNullOrWhiteSpace(config)) throw new ArgumentNullException("config");
         DefaultConfigs.Add(modName, config);
+    }
+
+    internal static void RegisterBasePath(string modName, string basePath)
+    {
+        if (string.IsNullOrWhiteSpace(basePath)) throw new ArgumentNullException("basePath");
+        if (BasePaths.ContainsKey(modName)) return;
+        BasePaths.Add(modName, basePath);
     }
 }

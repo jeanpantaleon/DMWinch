@@ -1,8 +1,8 @@
 using System;
-using Google.Protobuf.WellKnownTypes;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
+using Winch.Config;
 using Winch.Core;
 using Winch.Data.Shop;
 using Winch.Util;
@@ -12,22 +12,40 @@ namespace ExampleItems;
 
 public static class Loader
 {
-    public static string BasePath => ModAssemblyLoader.GetCurrentMod().BasePath;
+    // Automatically gets your mod's config
+    public static ModConfig ModConfig => ModConfig.GetConfig();
+    public static ExampleConfig Config;
+
+
+    public static ModAssembly ModAssembly => ModAssemblyLoader.GetCurrentMod();
+    public static string BasePath => ModAssembly.BasePath;
+    public static string GUID => ModAssembly.GUID;
+
 
     public static ExampleSaveParticipant Participant = ExampleSaveParticipant.Instance;
 
     public static ExampleRecipeData exampleRecipeData;
 
+
     public static ItemData MilkBucket => ItemUtil.GetModdedItemData("exampleitems.milk");
     public static VibrationData MilkBucketVibrationData => VibrationUtil.GetModdedVibrationData("exampleitems.milk");
 
+
     public static void Initialize()
     {
+        // Config
+        RefreshConfig(); // First grab of config
+        ModConfig.OnConfigChanged += ModConfig_OnConfigChanged;
+        ModConfig.OnConfigValueChanged += ModConfig_OnConfigValueChanged; // This always runs after OnConfigChanged
+
+        // Saves
         SaveUtil.RegisterDataParticipant(Participant);
         new GameObject(nameof(ExampleSaveBehaviour)).AddComponent<ExampleSaveBehaviour>();
 
+        // Recipe Data
         exampleRecipeData = ScriptableObject.CreateInstance<ExampleRecipeData>().DontDestroyOnLoad();
 
+        // Harvestable Particle Prefabs
         PoiUtil.AddModdedHarvestableParticlePrefab("MinecraftClownfishParticles", AssetBundleUtil.GetPrefab("exampleitems.bundle", "MinecraftClownfishParticles"));
         PoiUtil.AddModdedHarvestableParticlePrefab("MinecraftCodParticles", AssetBundleUtil.GetPrefab("exampleitems.bundle", "MinecraftCodParticles"));
         PoiUtil.AddModdedHarvestableParticlePrefab("MinecraftCodParticlesOriginal", AssetBundleUtil.GetPrefab("exampleitems.bundle", "MinecraftCodParticlesOriginal"));
@@ -89,10 +107,72 @@ public static class Loader
         #endregion
         #endregion
 
+        // Game Events
         ApplicationEvents.Instance.OnGameLoaded += OnGameLoaded;
         GameManager.Instance.OnGameStarted += OnGameStarted;
         GameManager.Instance.OnGameEnded += OnGameEnded;
     }
+
+    #region Config
+    public static void RefreshConfig()
+    {
+        var oldConfig = Config;
+        Config = ModConfig.ToObject<ExampleConfig>(); // Get the config as your custom class
+    }
+
+    private static void ModConfig_OnConfigChanged()
+    {
+        RefreshConfig();
+        // Do thing when any value changes
+    }
+
+    private static void ModConfig_OnConfigValueChanged(string key)
+    {
+        try
+        {
+            switch (key)
+            {
+                // either use nameof(ExampleConfig.Property) or just the string "Property"
+                case nameof(ExampleConfig.Toggle):
+                    // Do thing when just one value changes
+                    if (Config.Toggle)
+                    {
+                        WinchCore.Log.Info("Toggle was enabled");
+                    }
+                    else
+                    {
+                        WinchCore.Log.Info("Toggle was disabled");
+                    }
+                    break;
+                case nameof(ExampleConfig.Text):
+                    WinchCore.Log.Info($"Text was set to \"{Config.Text}\"");
+                    break;
+                case nameof(ExampleConfig.Integer):
+                    WinchCore.Log.Info($"Integer was set to \"{Config.Integer}\"");
+                    break;
+                case nameof(ExampleConfig.Decimal):
+                    WinchCore.Log.Info($"Decimal was set to \"{Config.Decimal}\"");
+                    break;
+                case nameof(ExampleConfig.Slider):
+                    WinchCore.Log.Info($"Slider was set to \"{Config.Slider}\"");
+                    break;
+                case nameof(ExampleConfig.Dropdown):
+                    WinchCore.Log.Info($"Dropdown was set to \"{Config.Dropdown}\"");
+                    break;
+                case nameof(ExampleConfig.Color):
+                    WinchCore.Log.Info($"Color was set to \"{Config.Color}\"");
+                    break;
+                default:
+                    WinchCore.Log.Info($"{key} was changed");
+                    break;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            WinchCore.Log.Error(ex.ToString());
+        }
+    }
+    #endregion
 
     private static GameObject CreateCube()
     {
@@ -159,8 +239,13 @@ public static class Loader
         gridShopJunk.gridConfiguration.mainItemSubtype |= ExampleEnums.ItemSubtypes.EXAMPLE;
         gridShopJunk.Reinit();
 
+        // Add a subtype to a grid
+        var gridShipwrightJunk = GameManager.Instance.SaveData.GetGridByKey(GridKey.SHIPWRIGHT_MATERIALS);
+        gridShipwrightJunk.gridConfiguration.mainItemSubtype |= ExampleEnums.ItemSubtypes.EXAMPLE;
+        gridShipwrightJunk.Reinit();
+
         // Add a subtype to a market/shipyard
-        var junkShipyards = DockUtil.GetAllShipyardDestinations().Where(shipyard => shipyard.marketTabs.Any(marketTab => marketTab.gridKey == GridKey.TRAVELLING_MERCHANT_MATERIALS));
+        var junkShipyards = DockUtil.GetAllShipyardDestinations().Where(shipyard => shipyard.marketTabs.Any(marketTab => marketTab.gridKey == GridKey.TRAVELLING_MERCHANT_MATERIALS || marketTab.gridKey == GridKey.SHIPWRIGHT_MATERIALS));
         foreach (var junkShipyard in junkShipyards)
         {
             junkShipyard.itemSubtypesBought |= ExampleEnums.ItemSubtypes.EXAMPLE;

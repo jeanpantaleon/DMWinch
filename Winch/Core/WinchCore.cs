@@ -36,15 +36,15 @@ public static class WinchCore
     {
         try
         {
-            string metaPath = Path.Combine(WinchInstallLocation, "mod_meta.json");
+            string metaPath = Path.Combine(WinchInstallLocation, Constants.ModManifestFileName);
             if (!File.Exists(metaPath))
             {
-                throw new FileNotFoundException($"Missing mod_meta.json file for Winch at {metaPath}. Reinstall the mod.");
+                throw new FileNotFoundException($"Missing {Constants.ModManifestFileName} file for Winch at {metaPath}. Reinstall the mod.");
             }
 
             string metaText = File.ReadAllText(metaPath);
             WinchModConfig = JsonConvert.DeserializeObject<Dictionary<string, object>>(metaText)
-                             ?? throw new InvalidOperationException($"Unable to parse mod_meta.json file at {metaPath}. Reinstall the mod.");
+                             ?? throw new InvalidOperationException($"Unable to parse {Constants.ModManifestFileName} file at {metaPath}. Reinstall the mod.");
 
             JSONConfig.AddDynamicConverter(new SerializedCrabPotPOIConverter());
         }
@@ -63,6 +63,7 @@ public static class WinchCore
             Log.Debug($"Game executable path: {Paths.ExecutablePath}");
             Log.Debug($"Unity Managed directory: {Paths.ManagedPath}");
             Log.Debug($"Winch path: {Paths.WinchPath}");
+            Log.Debug($"Mods path: {Paths.ModsPath}");
         }
         catch (Exception e)
         {
