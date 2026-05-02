@@ -99,17 +99,19 @@ public class ModAssembly
             throw new MissingFieldException("No 'ModGUID' field found in Mod Metadata.");
 
         string minVer = MinWinchVersion;
+        string winchVer = VersionUtil.GetVersion();
+
         if (minVer.IsNullOrWhitespace())
-            WinchCore.Log.Warn($"No MinWinchVersion defined. Mod will load anyway, but version conflicts may occur!");
+            WinchCore.Log.Warn($"No MinWinchVersion defined for mod {GUID}. Current Winch version is ({winchVer}). Mod will load anyway, but version conflicts may occur!");
         else
         {
-            string winchVer = VersionUtil.GetVersion();
-
             if (!VersionUtil.ValidateVersion(minVer))
-                throw new FormatException("MinWinchVersion not in correct format.");
+                throw new FormatException($"MinWinchVersion ({minVer}) not in correct format for mod {GUID}.");
+
+            WinchCore.Log.Debug($"Mod {GUID} requires Winch version ({minVer}) or newer. Current Winch version is ({winchVer}).");
 
             if (!VersionUtil.IsSameOrNewer(winchVer, minVer))
-                throw new Exception($"Mod requires a version ({minVer}) of Winch higher than the one installed  ({winchVer}).");
+                throw new Exception($"Mod {GUID} requires Winch version ({minVer}) or newer, but the current Winch version is ({winchVer}). Please update Winch or the mod.");
         }
     }
 
