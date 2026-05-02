@@ -19,7 +19,7 @@
 	"winch.detailedlogsources.title": "Detailed Log Sources",
 	"winch.detailedlogsources.tooltip": "Whether to show the class and method the log came from instead of just the assembly name.",
 	"winch.enabledeveloperconsole.title": "Enable Developer Console",
-	"winch.enabledeveloperconsole.tooltip": "Whether to enable the terminal that can opened with the ` key.",
+	"winch.enabledeveloperconsole.tooltip": "Whether to enable the terminal that can opened with the ` key (or R1 + R2 + L1 + L2 on controllers).",
 	"winch.maxlogfiles.title": "Max Log Files",
 	"winch.maxlogfiles.tooltip": "The maximum amount of logs that can be in the log folder.\n\nREQUIRES RESTART TO TAKE EFFECT.",
 	"winch.exportyarnprogram.title": "Export Yarn Program",

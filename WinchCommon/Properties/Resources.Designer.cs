@@ -67,7 +67,7 @@ namespace Winch.Properties {
         ///	&quot;LogLevel&quot;: &quot;DEBUG&quot;,
         ///	&quot;LogsFolder&quot;: &quot;Logs&quot;,
         ///	&quot;DetailedLogSources&quot;: false,
-        ///	&quot;EnableDeveloperConsole&quot;: true,
+        ///	&quot;EnableDeveloperConsole&quot;: false,
         ///	&quot;MaxLogFiles&quot;: 10,
         ///	&quot;ExportYarnProgram&quot;: false,
         ///	&quot;LogPort&quot;: &quot;&quot;
