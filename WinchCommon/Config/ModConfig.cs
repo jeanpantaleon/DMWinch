@@ -31,7 +31,7 @@ public class ModConfig : JSONConfig
             return path;
         else
         {
-            //WinchCore.Log.Error($"No 'DefaultConfig' attribute found in mod_meta.json for {modName}!");
+            //WinchCore.Log.Error($"No 'DefaultConfig' attribute found in {Constants.ModManifestFileName} for {modName}!");
             throw new KeyNotFoundException($"No '{Constants.ModDefaultConfigFileName}' file found in folder for {modName}!");
         }
     }

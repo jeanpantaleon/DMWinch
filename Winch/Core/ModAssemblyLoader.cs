@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Winch.Config;
 using Winch.Util;
+using Winch;
 
 namespace Winch.Core;
 
@@ -32,7 +33,7 @@ public static class ModAssemblyLoader
 
         // Find mod metadata files (mod_meta.json) and load mods from their containing folders
         string[] metaFiles = Directory.Exists(Paths.ModsPath)
-            ? Directory.GetFiles(Paths.ModsPath, "mod_meta.json", SearchOption.AllDirectories)
+            ? Directory.GetFiles(Paths.ModsPath, Constants.ModManifestFileName, SearchOption.AllDirectories)
             : Array.Empty<string>();
 
         string[] modDirs = metaFiles
@@ -139,13 +140,13 @@ public static class ModAssemblyLoader
     {
         try
         {
-            string modListPath = Path.Combine(Paths.WinchRootPath, "mod_list.json");
+            string modListPath = Paths.ModListPath;
 
             if (File.Exists(modListPath))
             {
                 string modList = File.ReadAllText(modListPath);
                 EnabledMods = JsonConvert.DeserializeObject<Dictionary<string, bool>>(modList)
-                              ?? throw new InvalidOperationException("Unable to parse mod_list.json file.");
+                              ?? throw new InvalidOperationException($"Unable to parse {Constants.ModListFileName} file.");
             }
 
             foreach (string mod in _installedAssemblies.Keys)

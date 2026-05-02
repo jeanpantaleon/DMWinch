@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using Winch.Config;
 using Winch.Util;
+using Winch;
 
 namespace Winch.Core;
 
@@ -53,12 +54,12 @@ public class ModAssembly
     private ModAssembly(string basePath) {
         BasePath = basePath;
 
-        string metaPath = Path.Combine(basePath, "mod_meta.json");
+        string metaPath = Path.Combine(basePath, Constants.ModManifestFileName);
         if (!File.Exists(metaPath))
-            throw new FileNotFoundException($"Missing mod_meta.json file at '{basePath}'.");
+            throw new FileNotFoundException($"Missing {Constants.ModManifestFileName} file at '{basePath}'.");
 
         string metaText = File.ReadAllText(metaPath);
-        _metadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(metaText) ?? throw new InvalidOperationException($"Unable to parse mod_meta.json file at '{basePath}'.");
+        _metadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(metaText) ?? throw new InvalidOperationException($"Unable to parse {Constants.ModManifestFileName} file at '{basePath}'.");
 
         // Normalize JToken/JValue entries so downstream lookups are simpler
         var keys = _metadata.Keys.ToArray();
@@ -95,7 +96,7 @@ public class ModAssembly
 
     private string GetRequiredMetadataString(string key)
     {
-        return GetMetadataString(key) ?? throw new MissingFieldException($"Required metadata field '{key}' is missing or empty in mod_meta.json for '{BasePathFolderName}'.");
+        return GetMetadataString(key) ?? throw new MissingFieldException($"Required metadata field '{key}' is missing or empty in {Constants.ModManifestFileName} for '{BasePathFolderName}'.");
     }
 
     private string GetMetadataString(string key)
@@ -280,7 +281,7 @@ public class ModAssembly
 
             if (string.IsNullOrWhiteSpace(depVersion))
             {
-                WinchCore.Log.Warn($"No minimum version specified for dependency '{depName}' in mod {GUID}. Will attempt to load any version of the dependency, but this may cause version conflicts. Specify by appending '@<version>' to the dependency name in mod_meta.json.");
+                WinchCore.Log.Warn($"No minimum version specified for dependency '{depName}' in mod {GUID}. Will attempt to load any version of the dependency, but this may cause version conflicts. Specify by appending '@<version>' to the dependency name in {Constants.ModManifestFileName}.");
             }
 
             bool executed = false;
@@ -318,7 +319,7 @@ public class ModAssembly
     {
         string entrypointSetting = Entrypoint;
         if (!entrypointSetting.Contains("/"))
-            throw new ArgumentException("Malformed Entrypoint in mod_meta.json");
+            throw new ArgumentException($"Malformed Entrypoint in {Constants.ModManifestFileName}");
 
         var parts = entrypointSetting.Split(new[] { '/' }, 2);
         string entrypointTypeName = parts[0];
@@ -343,7 +344,7 @@ public class ModAssembly
     {
         string preloadSetting = Preload;
         if (!preloadSetting.Contains("/"))
-            throw new ArgumentException("Malformed Preload in mod_meta.json");
+            throw new ArgumentException($"Malformed Preload in {Constants.ModManifestFileName}");
 
         var parts = preloadSetting.Split(new[] { '/' }, 2);
         string preloadTypeName = parts[0];

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using Winch;
 
 namespace Winch.Core;
 
@@ -44,6 +45,11 @@ public static class Paths
     public static string ModsPath { get; private set; }
 
     /// <summary>
+    /// The path to the mod list file which resides in the game root folder.
+    /// </summary>
+    public static string ModListPath { get; private set; }
+
+    /// <summary>
     /// The name of the currently executing process.
     /// </summary>
     public static string ProcessName { get; private set; }
@@ -78,7 +84,9 @@ public static class Paths
 
         ManagedPath = managedPath ?? Path.Combine(GameDataPath, "Managed");
 
-        ModsPath = Path.Combine(WinchRootPath, "Mods");
+        ModsPath = Path.Combine(WinchRootPath, Constants.ModsFolderName);
+
+        ModListPath = Path.Combine(WinchRootPath, Constants.ModListFileName);
 
         DllSearchPaths = (dllSearchPath ?? new string[0]).Concat(new[] { ManagedPath }).Distinct().ToArray();
 
